@@ -1,18 +1,24 @@
 #include "WiFi.h"
 
+
 void setup(){
   Serial.begin(115200);
   Serial.println("Serial iniciada.");
-	initWifi();
+  initWifi();
 
 }
 
 void loop(){
 
+
 }
 
 
 void initWiFi() {
+							
+const char* ssid = "EG8115V5";			// Replace with your network credentials (STATION)
+const char* password = "alpha147147";
+
 	WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi ..");
