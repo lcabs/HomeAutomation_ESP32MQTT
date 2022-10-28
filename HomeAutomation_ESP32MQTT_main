@@ -1,6 +1,10 @@
 /* Headers */ 
 #include <WiFi.h> /* Header para uso das funcionalidades de wi-fi do ESP32 */
 #include <PubSubClient.h>  /*  Header para uso da biblioteca PubSubClient */
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
  
 /* Defines do MQTT */
 /* IMPORTANTE: recomendamos fortemente alterar os nomes
@@ -9,12 +13,23 @@
                de outra pessoa.
 */
 /* Tópico MQTT para recepção de informações do broker MQTT para ESP32 */
-#define TOPICO_SUBSCRIBE "lcabs1993/arduino"   
+//#define TOPICO_SUBSCRIBE "lcabs1993/arduino"   
 /* Tópico MQTT para envio de informações do ESP32 para broker MQTT */
 #define TOPICO_PUBLISH   "lcabs1993/arduino"  
 /* id mqtt (para identificação de sessão) */
-
 #define ID_MQTT  "ESP32_lcabs1993"     
+
+/* Defines do Display */
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+#define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+
+
+
 /*  Variáveis e constantes globais */
 /* SSID / nome da rede WI-FI que deseja se conectar */
 const char* SSID = "EG8115V5"; 
@@ -47,6 +62,39 @@ void setup()
     init_serial();
     init_wifi();
     init_mqtt();
+
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { //Ive changed the address //already chill
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+  // Show initial display buffer contents on the screen --
+  // the library initializes this with an Adafruit splash screen.
+  display.display();
+  delay(2000); // Pause for 2 seconds
+
+  // Clear the buffer
+  display.clearDisplay();
+
+  // Draw a single pixel in white
+  display.drawPixel(10, 10, SSD1306_WHITE);
+
+  // Show the display buffer on the screen. You MUST call display() after
+  // drawing commands to make them visible on screen!
+  display.display();
+  delay(2000);
+  // display.display() is NOT necessary after every single drawing command,
+  // unless that's what you want...rather, you can batch up a bunch of
+  // drawing operations and then update the screen all at once by calling
+  // display.display(). These examples demonstrate both approaches...
+
+  // Invert and restore display, pausing in-between
+  display.invertDisplay(true);
+  delay(1000);
+  display.invertDisplay(false);
+  delay(1000);
+
+    
 }
   
 /* Função: inicializa comunicação serial com baudrate 115200 (para fins de monitorar no terminal serial 
@@ -105,6 +153,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
     }
     Serial.print("[MQTT] Mensagem recebida: ");
     Serial.println(msg);     
+    Serial.print("Topico: ");
+    Serial.println(topic);     
 }
   
 /* Função: reconecta-se ao broker MQTT (caso ainda não esteja conectado ou em caso de a conexão cair)
@@ -121,7 +171,14 @@ void reconnect_mqtt(void)
         if (MQTT.connect(ID_MQTT)) 
         {
             Serial.println("Conectado com sucesso ao broker MQTT!");
-            MQTT.subscribe(TOPICO_SUBSCRIBE); 
+            MQTT.subscribe("lcabs1993");
+            MQTT.subscribe("lcabs1993/arduino");
+            MQTT.subscribe("lcabs1993/arduino/buzzer");
+            MQTT.subscribe("lcabs1993/arduino/led");
+            MQTT.subscribe("lcabs1993/arduino/dht11/temp");
+            MQTT.subscribe("lcabs1993/arduino/dht11/humidade");
+            MQTT.subscribe("lcabs1993/arduino/PIR01");
+            
         } 
         else
         {
