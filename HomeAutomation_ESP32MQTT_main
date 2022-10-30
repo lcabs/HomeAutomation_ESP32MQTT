@@ -1,27 +1,25 @@
 /* Headers */ 
-#include <WiFi.h> 								// Header para uso das funcionalidades de wi-fi do ESP32
-#include <PubSubClient.h>  						//  Header para uso da biblioteca PubSubClient
+#include <WiFi.h>                 // Header para uso das funcionalidades de wi-fi do ESP32
+#include <PubSubClient.h>             //  Header para uso da biblioteca PubSubClient
 #include <SPI.h>
 #include <Wire.h>
-#include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Adafruit_GFX.h>
  
 /* Defines do MQTT */
-#define ID_MQTT  "ESP32_lcabs1993"     			// id mqtt (para identificação de sessão)
-const char* BROKER_MQTT = "broker.hivemq.com"; 	// URL do broker MQTT que deseja utilizar
-int BROKER_PORT = 1883;							// Porta do Broker MQTT 
+#define ID_MQTT  "ESP32_lcabs1993"          // id mqtt (para identificação de sessão)
+const char* BROKER_MQTT = "broker.hivemq.com";  // URL do broker MQTT que deseja utilizar
+int BROKER_PORT = 1883;             // Porta do Broker MQTT 
 
 /* Defines do Display */
-#define SCREEN_WIDTH 	128 					// OLED display width, in pixels
-#define SCREEN_HEIGHT 	64 						// OLED display height, in pixels
-
-// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-#define OLED_RESET     4 						// Reset pin # (or -1 if sharing Arduino reset pin)
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+#define OLED_WIDTH 128
+#define OLED_HEIGHT 64
+#define OLED_ADDR   0x3C
+Adafruit_SSD1306 display(OLED_WIDTH, OLED_HEIGHT);
 
 /*  Variáveis e constantes globais */
-const char* SSID = 		"EG8115V5"; 			// SSID: nome da rede WI-FI que deseja se conectar
-const char* PASSWORD = 	"alpha147147"; 			// Senha da rede WI-FI que deseja se conectar
+const char* SSID =    "EG8115V5";       // SSID: nome da rede WI-FI que deseja se conectar
+const char* PASSWORD =  "alpha147147";      // Senha da rede WI-FI que deseja se conectar
   
  /* Variáveis e objetos globais */
 WiFiClient espClient;
@@ -29,22 +27,43 @@ PubSubClient MQTT(espClient);
   
 //Prototypes
 void init_serial(void);
-//void init_display(void);						//TODO
+//void init_display(void);            //TODO
 void init_wifi(void);
 void init_mqtt(void);
 void reconnect_wifi(void); 
 void mqtt_callback(char* topic, byte* payload, unsigned int length);
 void verifica_conexoes_wifi_mqtt(void);
+void displayprintMQTT (void);
+void checkspayload(byte* payload);
  
 /* 
  *  Implementações das funções
  */
 void setup() 
 {
-    init_serial();								// Inicia a porta serial
-//	init_display();								//TODO
-    init_wifi();								// Conecta à rede Wifi
-    init_mqtt();								// Conecta ao broker MQTT
+    display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR);
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setTextColor(WHITE);
+    display.setCursor(0, 0);
+    display.println("T");  
+    display.setTextSize(2);
+    display.setTextColor(WHITE);
+    display.setCursor(0, 17);
+    display.println("This is");
+    display.println("a Splash");
+    display.println("Screen");
+    display.display();
+
+    // initialize digital pin LED_BUILTIN as an output.
+    pinMode(LED_BUILTIN, OUTPUT);
+
+
+
+    
+    init_serial();                // Inicia a porta serial
+    init_wifi();                // Conecta à rede Wifi
+    init_mqtt();                // Conecta ao broker MQTT
 
 
 }
@@ -57,7 +76,7 @@ void setup()
 void init_serial() 
 {
     Serial.begin(115200);
-	Serial.println("Serial inicializada.");
+  Serial.println("Serial inicializada.");
 }
  
  /* Função: inicializa o display.
@@ -67,12 +86,12 @@ void init_serial()
 void init_display() 
 {
 // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 		//Ive changed the address //already chill
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {    //Ive changed the address //already chill
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;); 											// Don't proceed, loop forever
+    for(;;);                      // Don't proceed, loop forever
   }  
-  display.clearDisplay();								// Clear the buffer 
-  display.invertDisplay(true);							// Invert and restore display, pausing in-between
+  display.clearDisplay();               // Clear the buffer 
+  display.invertDisplay(true);              // Invert and restore display, pausing in-between
   delay(1000);
   display.invertDisplay(false);
   delay(1000);   
@@ -101,8 +120,8 @@ void init_wifi(void)
  */
 void init_mqtt(void) 
 {
-    MQTT.setServer(BROKER_MQTT, BROKER_PORT); 	    // informa a qual broker e porta deve ser conectado
-    MQTT.setCallback(mqtt_callback);            	// atribui função de callback
+    MQTT.setServer(BROKER_MQTT, BROKER_PORT);       // informa a qual broker e porta deve ser conectado
+    MQTT.setCallback(mqtt_callback);              // atribui função de callback
 }
   
 /* Função: função de callback 
@@ -114,15 +133,27 @@ void init_mqtt(void)
 void mqtt_callback(char* topic, byte* payload, unsigned int length) 
 {
     String msg;
-    for(int i = 0; i < length; i++)    			 //obtem a string do payload recebido
+    for(int i = 0; i < length; i++)          //obtem a string do payload recebido
     {
        char c = (char)payload[i];
        msg += c;
     }
     Serial.print("[MQTT] Mensagem recebida: ");
-    Serial.println(msg);     
+    Serial.println(msg);  
+        
     Serial.print("Topico: ");
-    Serial.println(topic);     
+    Serial.println(topic); 
+/*
+    char mensagem[length];
+        for(int j = 0; j < length; j++)          //obtem a string do payload recebido
+    {
+       char d = msg[j];
+       mensagem += d;
+    }
+    
+  */  
+  checkspayload(msg);
+  displayprintMQTT(topic);
 }
   
 /* Função: reconecta-se ao broker MQTT (caso ainda não esteja conectado ou em caso de a conexão cair)
@@ -188,16 +219,55 @@ void reconnect_wifi()
  */
 void verifica_conexoes_wifi_mqtt(void)
 {
-    reconnect_wifi(); 								    // se não há conexão com o WiFI, a conexão é refeita 
-    if (!MQTT.connected()) 								// se não há conexão com o Broker, a conexão é refeita
+    reconnect_wifi();                     // se não há conexão com o WiFI, a conexão é refeita 
+    if (!MQTT.connected())                // se não há conexão com o Broker, a conexão é refeita
         reconnect_mqtt(); 
 } 
+
+void displayprintMQTT(char* topic){  
+  display.clearDisplay();
+
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println("MQTT!");
+  
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 17);
+  display.println("Mensagem recebida no");
+  display.println("topico:");
+  display.println(topic);
+  display.display();
+  }
+
+void checkspayload(String msg){
+
+  Serial.println(msg);
+
+  if (msg == "buzzeron")
+    {
+      Serial.println("Deu certo: BuzzerON!");
+      digitalWrite(LED_BUILTIN, HIGH);
+    } else if (msg == "buzzeroff")
+    {
+      Serial.println("Deu certo: BuzzerOFF!");
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+  };
+
+
+
  
 /* programa principal */
 void loop() 
 {   
     /* garante funcionamento das conexões WiFi e ao broker MQTT */
     verifica_conexoes_wifi_mqtt();
+
+    /* Printa a mensagem recebida por MQTT na tela */
+
+    
     /* Envia frase ao broker MQTT */
     //MQTT.publish("lcabs1993/arduino", "ESP32 se comunicando com MQTT");
  
