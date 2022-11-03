@@ -40,7 +40,7 @@ void checkspayload(byte* payload);
  *  Implementações das funções
  */
 void setup() 
-{
+{ 
     display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR);
     display.clearDisplay();
     display.setTextSize(2);
@@ -170,6 +170,7 @@ void reconnect_mqtt(void)
         if (MQTT.connect(ID_MQTT)) 
         {
             Serial.println("Conectado com sucesso ao broker MQTT!");
+            MQTT.publish("lcabs1993/arduino", "Reconectado!");
             MQTT.subscribe("lcabs1993");
             MQTT.subscribe("lcabs1993/arduino");
             MQTT.subscribe("lcabs1993/arduino/buzzer");
@@ -257,6 +258,14 @@ void checkspayload(String msg){
   };
 
 
+class screen 
+  {
+    public:
+
+    int screennumber;
+
+ 
+  };
 
  
 /* programa principal */
