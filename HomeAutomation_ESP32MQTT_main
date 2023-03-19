@@ -27,9 +27,15 @@ const char* ntpServer1 = "pool.ntp.org";
 const char* ntpServer2 = "time.nist.gov";
 const long  gmtOffset_sec = -14400;
 const int   daylightOffset_sec = 3600;
+const int   PIRSensor = 5;    // the pin that the PIRSensor is attached to
+const int   ledPin = 6;       // the pin that the LED is attached to
 
 const char* time_zone = "CET-1CEST,M3.5.0,M10.5.0/3";  // TimeZone rule for Europe/Rome including daylight adjustment rules (optional)
 
+// Variables will change:
+int         buttonPushCounter = 0;   // counter for the number of button presses
+int         buttonState = 0;         // current state of the button
+int         lastButtonState = 0;     // previous state of the button
 
  /* Variáveis e objetos globais */
 WiFiClient espClient;
@@ -60,20 +66,22 @@ void setup()
     delay(100);
     display.invertDisplay(false);
     delay(100);   
-/*    display.setTextSize(2);
+    display.setTextSize(2);
     display.setTextColor(WHITE);
     display.setCursor(0, 0);
-    display.println("Welcome");  
+    display.println("ON");  
     display.setTextSize(1);
     display.setTextColor(WHITE);
     display.setCursor(0, 40);
     display.println("System ready.");
-    display.println("---------------------");
-    display.println("          Press Start");
-*/  display.display();
+   // display.println("---------------------");
+  //  display.println("          Press Start");
+
+  display.display();
 
     // initialize digital pin LED_BUILTIN as an output.
     pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(PIRSensor, INPUT);
 
   // set notification call-back function
   sntp_set_time_sync_notification_cb( timeavailable );
@@ -354,17 +362,6 @@ void timeavailable(struct timeval *t)
   Serial.println("Got time adjustment from NTP!");
   printLocalTime();
 }
-
-
-class screen 
-  {
-    public:
-
-    int screennumber;
-
- 
-  };
-
  
 /* programa principal */
 void loop() 
@@ -372,8 +369,25 @@ void loop()
     /* garante funcionamento das conexões WiFi e ao broker MQTT */
     verifica_conexoes_wifi_mqtt();
 
-    /* Printa a mensagem recebida por MQTT na tela */
+    /* Lê PIR */
+  // read the pushbutton input pin:
+  buttonState = digitalRead(PIRSensor);
+  if (buttonState != lastButtonState) {
 
+    if (buttonState == HIGH) {
+      buttonPushCounter++;
+      Serial.println("on");
+      MQTT.publish("lcabs1993/PIR01", "On");
+      digitalWrite(LED_BUILTIN, HIGH);    
+      Serial.print("number of button pushes: ");
+      Serial.println(buttonPushCounter);
+    } else {
+      Serial.println("off");
+      digitalWrite(LED_BUILTIN, LOW);    
+      MQTT.publish("lcabs1993/PIR01", "Off");
+    }
+  }
+  lastButtonState = buttonState;
     
     /* Envia frase ao broker MQTT */
     //MQTT.publish("lcabs1993/arduino", "ESP32 se comunicando com MQTT");
