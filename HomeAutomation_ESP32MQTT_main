@@ -9,8 +9,8 @@
 #include <Adafruit_GFX.h>
  
 /* Defines do MQTT */
-#define ID_MQTT  "ESP32_lcabs1993"          // id mqtt (para identificação de sessão)
-const char* BROKER_MQTT = "broker.hivemq.com";  // URL do broker MQTT que deseja utilizar
+#define ID_MQTT  "esp32"          // id mqtt (para identificação de sessão)
+const char* BROKER_MQTT = "192.168.18.157";  // URL do broker MQTT que deseja utilizar
 int BROKER_PORT = 1883;             // Porta do Broker MQTT 
 
 /* Defines do Display */
@@ -205,7 +205,7 @@ void reconnect_mqtt(void)
     {
         Serial.print("* Tentando se conectar ao Broker MQTT: ");
         Serial.println(BROKER_MQTT);
-        if (MQTT.connect(ID_MQTT)) 
+        if (MQTT.connect(ID_MQTT, "esp32","12345")) 
         {
             Serial.println("Conectado com sucesso ao broker MQTT!");
             MQTT.publish("lcabs1993/arduino", "Reconectado!");
